@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using UnityEngine;
+using UnityEditor;
 using Object = UnityEngine.Object;
 
 namespace NewBlood
@@ -21,7 +21,7 @@ namespace NewBlood
         /// <summary>Gets the managed wrapper object associated with the provided native object.</summary>
         public static Object GetManagedObject(IntPtr address)
         {
-            return Resources.InstanceIDToObject(GetInstanceID(address));
+            return EditorUtility.InstanceIDToObject(GetInstanceID(address));
         }
     }
 }
