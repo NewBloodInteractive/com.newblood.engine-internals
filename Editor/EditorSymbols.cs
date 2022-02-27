@@ -7,6 +7,7 @@ using UnityEditor;
 namespace NewBlood
 {
     /// <summary>Provides APIs for managing editor symbols.</summary>
+    [InitializeOnLoad]
     public static unsafe class EditorSymbols
     {
         /// <summary>Gets the address of the symbol with the provided name.</summary>
@@ -58,8 +59,7 @@ namespace NewBlood
     #endif
 
     #if UNITY_EDITOR_WIN
-        [InitializeOnLoadMethod]
-        static void Initialize()
+        static EditorSymbols()
         {
             using (var process = Process.GetCurrentProcess())
             using (var module  = process.MainModule)
