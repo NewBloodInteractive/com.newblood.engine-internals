@@ -1,0 +1,7 @@
+{
+  "name": "com.newblood.engine-internals",
+  "displayName": "Engine Internals",
+  "description": "Provides access to internal engine APIs.",
+  "version": "1.0.0",
+  "type": "library"
+}
