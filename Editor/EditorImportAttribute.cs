@@ -2,7 +2,7 @@
 
 namespace NewBlood
 {
-#if UNITY_2019_2_OR_NEWER
+#if UNITY_2020_1_OR_NEWER
     /// <summary>Attribute used to indicate that a field should be initialized to the address of an editor symbol.</summary>
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class EditorImportAttribute : Attribute

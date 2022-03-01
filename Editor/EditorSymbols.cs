@@ -79,7 +79,7 @@ namespace NewBlood
                 }
             }
 
-        #if UNITY_2019_2_OR_NEWER
+        #if UNITY_2020_1_OR_NEWER
             foreach (FieldInfo field in TypeCache.GetFieldsWithAttribute<EditorImportAttribute>())
             {
                 var attribute = field.GetCustomAttribute<EditorImportAttribute>();
