@@ -11,9 +11,32 @@ namespace NewBlood
     [InitializeOnLoad]
     public static unsafe class EditorSymbols
     {
+        static bool s_Initialized;
+
+        static readonly object s_InitializeLock = new object();
+
         /// <summary>Ensures that the <see cref="EditorSymbols"/> class has been initialized.</summary>
         public static void EnsureInitialized()
         {
+            lock (s_InitializeLock)
+            {
+                if (s_Initialized)
+                    return;
+
+            #if UNITY_EDITOR_WIN
+                using (var process = Process.GetCurrentProcess())
+                using (var module  = process.MainModule)
+                {
+                    fixed (char* pUserSearchPath = Path.GetDirectoryName(module.FileName))
+                    {
+                        DbgHelp.SymSetOptions(DbgHelp.SYMOPT_IGNORE_CVREC);
+                        ThrowOnError(DbgHelp.SymInitializeW(new IntPtr(-1), (ushort*)pUserSearchPath, fInvadeProcess: 1));
+                    }
+                }
+
+                s_Initialized = true;
+            #endif
+            }
         }
 
         /// <summary>Gets the address of the symbol with the provided name.</summary>
@@ -31,6 +54,7 @@ namespace NewBlood
         public static bool TryGetSymbol(string name, out IntPtr address)
         {
         #if UNITY_EDITOR_WIN
+            EnsureInitialized();
             var symbol = new SYMBOL_INFOW { SizeOfStruct = (uint)sizeof(SYMBOL_INFOW) };
 
             fixed (char* pName = name)
@@ -69,16 +93,6 @@ namespace NewBlood
         {
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
 
-            using (var process = Process.GetCurrentProcess())
-            using (var module  = process.MainModule)
-            {
-                fixed (char* pUserSearchPath = Path.GetDirectoryName(module.FileName))
-                {
-                    DbgHelp.SymSetOptions(DbgHelp.SYMOPT_IGNORE_CVREC);
-                    ThrowOnError(DbgHelp.SymInitializeW(new IntPtr(-1), (ushort*)pUserSearchPath, fInvadeProcess: 1));
-                }
-            }
-
         #if UNITY_2020_1_OR_NEWER
             foreach (FieldInfo field in TypeCache.GetFieldsWithAttribute<EditorImportAttribute>())
             {
@@ -100,7 +114,14 @@ namespace NewBlood
 
         static void OnBeforeAssemblyReload()
         {
-            ThrowOnError(DbgHelp.SymCleanup(new IntPtr(-1)));
+            lock (s_InitializeLock)
+            {
+                if (!s_Initialized)
+                    return;
+
+                ThrowOnError(DbgHelp.SymCleanup(new IntPtr(-1)));
+                s_Initialized = false;
+            }
         }
     #endif
 
