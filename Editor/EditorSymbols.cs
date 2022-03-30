@@ -98,7 +98,7 @@ namespace NewBlood
             {
                 var attribute = field.GetCustomAttribute<EditorImportAttribute>();
 
-                if (!field.IsStatic || string.IsNullOrEmpty(attribute.Name))
+                if (!field.IsStatic || field.IsInitOnly || string.IsNullOrEmpty(attribute.Name))
                     continue;
 
                 if (!TryGetSymbol(attribute.Name, out IntPtr address))
