@@ -1,12 +1,8 @@
 {
-    "name": "NewBlood.EngineInternals.Editor",
+    "name": "NewBlood.EngineInternals",
     "rootNamespace": "NewBlood",
-    "references": [
-        "GUID:57c63e24296ca09459f8091b2d58fbb1"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "references": [],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": true,
     "overrideReferences": false,

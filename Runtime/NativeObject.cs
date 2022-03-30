@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using UnityEditor;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace NewBlood
@@ -22,11 +22,19 @@ namespace NewBlood
             return *(int*)IntPtr.Add(native, s_OffsetOfInstanceIDInCPlusPlusObject);
         }
 
+    #if UNITY_2020_2_OR_NEWER
         /// <summary>Gets the managed wrapper associated with the provided native object.</summary>
         public static Object GetManagedObject(IntPtr native)
         {
-            return EditorUtility.InstanceIDToObject(GetInstanceID(native));
+            return Resources.InstanceIDToObject(GetInstanceID(native));
         }
+    #elif UNITY_EDITOR
+        /// <summary>Gets the managed wrapper associated with the provided native object.</summary>
+        public static Object GetManagedObject(IntPtr native)
+        {
+            return UnityEditor.EditorUtility.InstanceIDToObject(GetInstanceID(native));
+        }
+    #endif
 
         /// <summary>Returns the underlying native object from a managed wrapper.</summary>
         public static IntPtr GetNativeObject(Object managed)
