@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 namespace NewBlood
 {
     /// <summary>Provides APIs for managing native Unity objects.</summary>
-    public static unsafe class NativeObject
+    public static unsafe class NativeObjectUtility
     {
         static readonly int s_OffsetOfInstanceIDInCPlusPlusObject = (int)typeof(Object)
             .GetMethod("GetOffsetOfInstanceIDInCPlusPlusObject", BindingFlags.NonPublic | BindingFlags.Static)
