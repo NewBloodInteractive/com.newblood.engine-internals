@@ -1,0 +1,6 @@
+<linker>
+    <type fullname="UnityEngine.Object">
+        <method signature="System.IntPtr GetCachedPtr()" />
+        <method signature="System.Int32 GetOffsetOfInstanceIDInCPlusPlusObject()" />
+    </type>
+</linker>
