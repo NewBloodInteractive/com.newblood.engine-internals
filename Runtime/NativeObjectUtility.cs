@@ -17,29 +17,29 @@ namespace NewBlood
             .CreateDelegate(typeof(Func<Object, IntPtr>));
 
         /// <summary>Gets the instance ID of the provided native object.</summary>
-        public static int GetInstanceID(IntPtr native)
+        public static int GetInstanceID(NativeObject* native)
         {
-            return *(int*)IntPtr.Add(native, s_OffsetOfInstanceIDInCPlusPlusObject);
+            return *(int*)IntPtr.Add((IntPtr)native, s_OffsetOfInstanceIDInCPlusPlusObject);
         }
 
     #if UNITY_2020_2_OR_NEWER
         /// <summary>Gets the managed wrapper associated with the provided native object.</summary>
-        public static Object GetManagedObject(IntPtr native)
+        public static Object GetManagedObject(NativeObject* native)
         {
             return Resources.InstanceIDToObject(GetInstanceID(native));
         }
     #elif UNITY_EDITOR
         /// <summary>Gets the managed wrapper associated with the provided native object.</summary>
-        public static Object GetManagedObject(IntPtr native)
+        public static Object GetManagedObject(NativeObject* native)
         {
             return UnityEditor.EditorUtility.InstanceIDToObject(GetInstanceID(native));
         }
     #endif
 
         /// <summary>Returns the underlying native object from a managed wrapper.</summary>
-        public static IntPtr GetNativeObject(Object managed)
+        public static NativeObject* GetNativeObject(Object managed)
         {
-            return s_GetCachedPtr(managed);
+            return (NativeObject*)s_GetCachedPtr(managed);
         }
     }
 }
