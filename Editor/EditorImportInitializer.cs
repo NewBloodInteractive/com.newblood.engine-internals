@@ -18,7 +18,7 @@ namespace NewBlood
                 if (!field.IsStatic || field.IsInitOnly || string.IsNullOrEmpty(attribute.Name))
                     continue;
 
-                if (!TryGetSymbol(attribute.Name, out IntPtr address))
+                if (!EditorSymbols.TryGetSymbol(attribute.Name, out IntPtr address))
                     continue;
 
                 if (field.FieldType == typeof(IntPtr))
@@ -26,11 +26,6 @@ namespace NewBlood
                 else if (typeof(Delegate).IsAssignableFrom(field.FieldType))
                     field.SetValue(null, Marshal.GetDelegateForFunctionPointer(address, field.FieldType));
             }
-        }
-
-        static bool TryGetSymbol(string name, out IntPtr address)
-        {
-            return EditorSymbols.TryGetSymbol(name, out address);
         }
     }
 #endif
