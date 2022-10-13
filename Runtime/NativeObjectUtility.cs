@@ -19,7 +19,7 @@ namespace NewBlood
         /// <summary>Gets the instance ID of the provided native object.</summary>
         public static int GetInstanceID(NativeObject* native)
         {
-            return *(int*)IntPtr.Add((IntPtr)native, s_OffsetOfInstanceIDInCPlusPlusObject);
+            return *(int*)((byte*)native + s_OffsetOfInstanceIDInCPlusPlusObject);
         }
 
     #if UNITY_2020_2_OR_NEWER
