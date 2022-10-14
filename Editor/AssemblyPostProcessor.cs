@@ -121,6 +121,7 @@ namespace NewBlood
                                 var method    = methods[i];
                                 var attribute = attributes[i];
                                 var name      = attribute.ConstructorArguments[0].Value.ToString();
+                                method.CustomAttributes.Remove(attribute);
 
                                 if (attribute.HasProperties)
                                     argument = attribute.Properties[0].Argument;
