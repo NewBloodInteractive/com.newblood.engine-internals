@@ -162,10 +162,11 @@ namespace NewBlood
                                     MethodAttributes.Virtual,
                                     method.ReturnType)
                                 {
-                                    HasThis   = true,
-                                    IsRuntime = true
+                                    HasThis          = true,
+                                    IsRuntime        = true,
+                                    MethodReturnType = method.MethodReturnType
                                 };
-
+                                
                                 foreach (var parameter in method.Parameters)
                                     invoke.Parameters.Add(parameter);
 
@@ -193,9 +194,10 @@ namespace NewBlood
                                     MethodAttributes.Virtual,
                                     method.ReturnType)
                                 {
-                                    HasThis    = true,
-                                    IsRuntime  = true,
-                                    Parameters = { new ParameterDefinition("ar", ParameterAttributes.None, assembly.MainModule.ImportReference(typeof(IAsyncResult))) }
+                                    HasThis          = true,
+                                    IsRuntime        = true,
+                                    Parameters       = { new ParameterDefinition("ar", ParameterAttributes.None, assembly.MainModule.ImportReference(typeof(IAsyncResult))) },
+                                    MethodReturnType = method.MethodReturnType
                                 };
 
                                 type.Methods.Add(ctor);
