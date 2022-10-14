@@ -214,9 +214,15 @@ namespace NewBlood
                                 IDiaEnumSymbols enumerator;
                                 globalScope.findChildren(SymTagEnum.SymTagPublicSymbol, name, 0, out enumerator);
 
+                                method.Body = new MethodBody(method);
+                                var il      = method.Body.GetILProcessor();
+
                                 if (enumerator.count <= 0)
                                 {
                                     Debug.LogWarningFormat("Could not resolve symbol: {0}", name);
+                                    il.Emit(OpCodes.Ldstr, $"Unable to find an entry point named '{name}'.");
+                                    il.Emit(OpCodes.Newobj, assembly.MainModule.ImportReference(typeof(EntryPointNotFoundException).GetConstructor(new[] { typeof(string) })));
+                                    il.Emit(OpCodes.Throw);
                                     continue;
                                 }
 
@@ -232,8 +238,6 @@ namespace NewBlood
                                 importIL.Emit(OpCodes.Castclass, type);
                                 importIL.Emit(OpCodes.Stsfld, field);
 
-                                method.Body = new MethodBody(method);
-                                var il      = method.Body.GetILProcessor();
                                 il.Emit(OpCodes.Ldsfld, field);
 
                                 for (int p = 0; p < method.Parameters.Count; p++)
