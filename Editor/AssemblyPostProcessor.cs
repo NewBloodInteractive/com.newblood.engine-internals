@@ -8,29 +8,46 @@ using UnityEditor.Compilation;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Dia2Lib;
+using BindingFlags = System.Reflection.BindingFlags;
 
 namespace NewBlood
 {
-    static class AssemblyPostProcessor
+    internal static class AssemblyPostProcessor
     {
+        private const string InitializedProperty = "NewBlood.EngineInternals.Initialized";
+
         public static string BuildVariantExecutable { get; set; }
 
-        static readonly List<string> s_AssemblyPaths = new List<string>();
+        private static readonly List<string> s_AssemblyPaths = new List<string>();
 
         [InitializeOnLoadMethod]
-        static void Initialize()
+        private static void Initialize()
         {
             CompilationPipeline.compilationStarted += OnCompilationStarted;
             CompilationPipeline.compilationFinished += OnCompilationFinished;
             CompilationPipeline.assemblyCompilationFinished += OnAssemblyCompilationFinished;
+
+            if (!SessionState.GetBool(InitializedProperty, false))
+            {
+                SessionState.SetBool(InitializedProperty, true);
+            #if UNITY_2021_1_OR_NEWER
+                CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache);
+            #elif UNITY_2019_3_OR_NEWER
+                CompilationPipeline.RequestScriptCompilation();
+            #elif UNITY_2017_1_OR_NEWER
+                Type.GetType("UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface, UnityEditor", true)
+                    .GetMethod("DirtyAllScripts", BindingFlags.Static | BindingFlags.Public)
+                    .Invoke(null, null);
+            #endif
+            }
         }
 
-        static void OnCompilationStarted(object context)
+        private static void OnCompilationStarted(object context)
         {
             s_AssemblyPaths.Clear();
         }
 
-        static void OnAssemblyCompilationFinished(string assemblyPath, CompilerMessage[] messages)
+        private static void OnAssemblyCompilationFinished(string assemblyPath, CompilerMessage[] messages)
         {
             s_AssemblyPaths.Add(assemblyPath);
         }
@@ -271,7 +288,7 @@ namespace NewBlood
             }
         }
 
-        static void OnCompilationFinished(object context)
+        private static void OnCompilationFinished(object context)
         {
             if (!BuildPipeline.isBuildingPlayer)
                 ProcessAssemblies(EngineImportHelpers.GetMainModule().FileName);

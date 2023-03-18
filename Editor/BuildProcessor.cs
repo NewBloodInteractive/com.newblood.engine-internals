@@ -7,7 +7,7 @@ using UnityEditor.Build.Reporting;
 
 namespace NewBlood
 {
-    sealed class BuildProcessor : IPreprocessBuildWithReport
+    internal sealed class BuildProcessor : IPreprocessBuildWithReport
     {
         public int callbackOrder => 0;
 
@@ -31,7 +31,7 @@ namespace NewBlood
             AssemblyPostProcessor.BuildVariantExecutable = Path.Combine(target, "Variations", variant, "UnityPlayer.dll");
         }
 
-        static string GetVariationName(BuildTarget target, BuildOptions options, ScriptingImplementation backend)
+        private static string GetVariationName(BuildTarget target, BuildOptions options, ScriptingImplementation backend)
         {
             string name;
 
