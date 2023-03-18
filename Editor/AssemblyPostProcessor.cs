@@ -90,6 +90,9 @@ namespace NewBlood
                             {
                                 foreach (PropertyDefinition property in type.Properties)
                                 {
+                                    if (property.GetMethod == null)
+                                        continue;
+
                                     foreach (CustomAttribute attribute in property.GetMethod.CustomAttributes)
                                     {
                                         if (attribute.AttributeType.FullName != typeof(EngineImportAttribute).FullName)
@@ -98,12 +101,6 @@ namespace NewBlood
                                         if (property.SetMethod != null)
                                         {
                                             Debug.LogErrorFormat("[EngineImport] Property must be get-only: {0}", property.FullName);
-                                            continue;
-                                        }
-
-                                        if (property.GetMethod == null)
-                                        {
-                                            Debug.LogErrorFormat("[EngineImport] Property must have getter: {0}", property.FullName);
                                             continue;
                                         }
 
