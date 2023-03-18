@@ -65,7 +65,7 @@ namespace NewBlood
                 var globalScope = session.globalScope;
 
                 var methods    = new List<MethodDefinition>();
-                var attributes = new List<CustomAttribute>();
+                var attributes = new Dictionary<MemberReference, CustomAttribute>();
 
                 foreach (string assemblyPath in s_AssemblyPaths)
                 {
@@ -88,6 +88,49 @@ namespace NewBlood
                     
                             foreach (TypeDefinition type in assembly.MainModule.Types)
                             {
+                                foreach (PropertyDefinition property in type.Properties)
+                                {
+                                    foreach (CustomAttribute attribute in property.GetMethod.CustomAttributes)
+                                    {
+                                        if (attribute.AttributeType.FullName != typeof(EngineImportAttribute).FullName)
+                                            continue;
+
+                                        if (property.SetMethod != null)
+                                        {
+                                            Debug.LogErrorFormat("[EngineImport] Property must be get-only: {0}", property.FullName);
+                                            continue;
+                                        }
+
+                                        if (property.GetMethod == null)
+                                        {
+                                            Debug.LogErrorFormat("[EngineImport] Property must have getter: {0}", property.FullName);
+                                            continue;
+                                        }
+
+                                        if (!property.GetMethod.IsStatic)
+                                        {
+                                            Debug.LogErrorFormat("[EngineImport] Property must be static: {0}", property.FullName);
+                                            continue;
+                                        }
+
+                                        if (!property.PropertyType.IsPointer &&
+                                            !property.PropertyType.IsFunctionPointer &&
+                                            property.PropertyType != assembly.MainModule.TypeSystem.IntPtr &&
+                                            property.PropertyType != assembly.MainModule.TypeSystem.UIntPtr)
+                                        {
+                                            Debug.LogErrorFormat("[EngineImport] Property must return pointer or native integer type: {0}", property.FullName);
+                                            continue;
+                                        }
+
+                                        if (property.GetMethod.RVA != 0)
+                                            Debug.LogWarningFormat("[EngineImport] Property is not marked as extern: {0}", property.FullName);
+
+                                        methods.Add(property.GetMethod);
+                                        attributes.Add(property, attribute);
+                                        break;
+                                    }
+                                }
+
                                 foreach (MethodDefinition method in type.Methods)
                                 {
                                     foreach (CustomAttribute attribute in method.CustomAttributes)
@@ -105,7 +148,7 @@ namespace NewBlood
                                             Debug.LogWarningFormat("[EngineImport] Method is not marked as extern: {0}", method.FullName);
 
                                         methods.Add(method);
-                                        attributes.Add(attribute);
+                                        attributes.Add(method, attribute);
                                         break;
                                     }
                                 }
@@ -136,9 +179,36 @@ namespace NewBlood
                             {
                                 CustomAttributeArgument argument;
                                 var method    = methods[i];
-                                var attribute = attributes[i];
+                                var attribute = attributes[method];
                                 var name      = attribute.ConstructorArguments[0].Value.ToString();
                                 method.CustomAttributes.Remove(attribute);
+
+                                IDiaEnumSymbols enumerator;
+                                globalScope.findChildren(SymTagEnum.SymTagPublicSymbol, name, 0, out enumerator);
+                                
+                                method.Body = new MethodBody(method);
+                                var il      = method.Body.GetILProcessor();
+
+                                if (enumerator.count <= 0)
+                                {
+                                    Debug.LogWarningFormat("Could not resolve symbol: {0}", name);
+                                    il.Emit(OpCodes.Ldstr, $"Unable to find an entry point named '{name}'.");
+                                    il.Emit(OpCodes.Newobj, assembly.MainModule.ImportReference(typeof(EntryPointNotFoundException).GetConstructor(new[] { typeof(string) })));
+                                    il.Emit(OpCodes.Throw);
+                                    continue;
+                                }
+
+                                var symbol  = enumerator.Item(0);
+                                var address = symbol.relativeVirtualAddress;
+
+                                if (method.IsGetter)
+                                {
+                                    il.Emit(OpCodes.Call, baseAddress);
+                                    il.Emit(OpCodes.Ldc_I4, (int)address);
+                                    il.Emit(OpCodes.Add);
+                                    il.Emit(OpCodes.Ret);
+                                    continue;
+                                }
 
                                 if (attribute.HasProperties)
                                     argument = attribute.Properties[0].Argument;
@@ -229,24 +299,6 @@ namespace NewBlood
                                     FieldAttributes.InitOnly,
                                     type);
 
-                                IDiaEnumSymbols enumerator;
-                                globalScope.findChildren(SymTagEnum.SymTagPublicSymbol, name, 0, out enumerator);
-
-                                method.Body = new MethodBody(method);
-                                var il      = method.Body.GetILProcessor();
-
-                                if (enumerator.count <= 0)
-                                {
-                                    Debug.LogWarningFormat("Could not resolve symbol: {0}", name);
-                                    il.Emit(OpCodes.Ldstr, $"Unable to find an entry point named '{name}'.");
-                                    il.Emit(OpCodes.Newobj, assembly.MainModule.ImportReference(typeof(EntryPointNotFoundException).GetConstructor(new[] { typeof(string) })));
-                                    il.Emit(OpCodes.Throw);
-                                    continue;
-                                }
-
-                                var symbol  = enumerator.Item(0);
-                                var address = symbol.relativeVirtualAddress;
-
                                 importIL.Emit(OpCodes.Call, baseAddress);
                                 importIL.Emit(OpCodes.Ldc_I4, (int)address);
                                 importIL.Emit(OpCodes.Add);
@@ -291,7 +343,7 @@ namespace NewBlood
         private static void OnCompilationFinished(object context)
         {
             if (!BuildPipeline.isBuildingPlayer)
-                ProcessAssemblies(EngineImportHelpers.GetMainModule().FileName);
+                ProcessAssemblies(EngineImportHelpers.MainModuleFileName);
             else
             {
                 if (BuildVariantExecutable != null)
