@@ -22,19 +22,17 @@ namespace NewBlood
             return *(int*)((byte*)native + s_OffsetOfInstanceIDInCPlusPlusObject);
         }
 
-    #if UNITY_2020_2_OR_NEWER
         /// <summary>Gets the managed wrapper associated with the provided native object.</summary>
         public static Object GetManagedObject(NativeObject* native)
         {
+        #if UNITY_2020_2_OR_NEWER
             return Resources.InstanceIDToObject(GetInstanceID(native));
-        }
-    #elif UNITY_EDITOR
-        /// <summary>Gets the managed wrapper associated with the provided native object.</summary>
-        public static Object GetManagedObject(NativeObject* native)
-        {
+        #elif UNITY_EDITOR
             return UnityEditor.EditorUtility.InstanceIDToObject(GetInstanceID(native));
+        #else
+            throw new NotSupportedException();
+        #endif
         }
-    #endif
 
         /// <summary>Returns the underlying native object from a managed wrapper.</summary>
         public static NativeObject* GetNativeObject(Object managed)
