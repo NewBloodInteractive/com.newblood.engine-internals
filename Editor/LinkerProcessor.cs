@@ -1,4 +1,4 @@
-#if UNITY_EDITOR && UNITY_2019_3_OR_NEWER
+#if UNITY_2019_3_OR_NEWER
 using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
@@ -7,11 +7,11 @@ using UnityEditor.UnityLinker;
 
 namespace NewBlood
 {
-    sealed class LinkerProcessor : IUnityLinkerProcessor
+    internal sealed class LinkerProcessor : IUnityLinkerProcessor
     {
         int IOrderedCallback.callbackOrder => 0;
 
-        const string LinkerFileGuid = "bcbe54df6774f9148b1eb4362fcdfed4";
+        private const string LinkerFileGuid = "bcbe54df6774f9148b1eb4362fcdfed4";
 
         string IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
         {
