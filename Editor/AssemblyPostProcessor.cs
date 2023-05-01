@@ -89,26 +89,11 @@ namespace NewBlood
                     
                             foreach (TypeDefinition type in assembly.MainModule.Types)
                             {
-                                foreach (MethodDefinition method in type.Methods)
+                                GetAnnotatedMethods(type, methods, attributes);
+
+                                foreach (TypeDefinition nested in type.NestedTypes)
                                 {
-                                    foreach (CustomAttribute attribute in method.CustomAttributes)
-                                    {
-                                        if (attribute.AttributeType.FullName != typeof(SymbolImportAttribute).FullName)
-                                            continue;
-
-                                        if (!method.IsStatic)
-                                        {
-                                            Debug.LogErrorFormat("[EngineImport] Method must be static: {0}", method.FullName);
-                                            continue;
-                                        }
-
-                                        if (method.RVA != 0)
-                                            Debug.LogWarningFormat("[EngineImport] Method is not marked as extern: {0}", method.FullName);
-
-                                        methods.Add(method);
-                                        attributes.Add(method, attribute);
-                                        break;
-                                    }
+                                    GetAnnotatedMethods(nested, methods, attributes);
                                 }
                             }
 
@@ -168,6 +153,31 @@ namespace NewBlood
                 }
 
                 s_AssemblyPaths.Clear();
+            }
+        }
+
+        private static void GetAnnotatedMethods(TypeDefinition type, List<MethodDefinition> methods, Dictionary<MethodDefinition, CustomAttribute> attributes)
+        {
+            foreach (MethodDefinition method in type.Methods)
+            {
+                foreach (CustomAttribute attribute in method.CustomAttributes)
+                {
+                    if (attribute.AttributeType.FullName != typeof(SymbolImportAttribute).FullName)
+                        continue;
+
+                    if (!method.IsStatic)
+                    {
+                        Debug.LogErrorFormat("[SymbolImport] Method must be static: {0}", method.FullName);
+                        continue;
+                    }
+
+                    if (method.RVA != 0)
+                        Debug.LogWarningFormat("[SymbolImport] Method is not marked as extern: {0}", method.FullName);
+
+                    methods.Add(method);
+                    attributes.Add(method, attribute);
+                    break;
+                }
             }
         }
 
