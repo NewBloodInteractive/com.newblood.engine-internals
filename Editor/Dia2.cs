@@ -8,17 +8,20 @@ namespace NewBlood
     {
     #if UNITY_EDITOR_WIN
         [DllImport("msdia140", PreserveSig = false)]
-        private static extern void DllGetClassObject([In] Guid rclsid, [In] Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
+        private static extern void DllGetClassObject(Guid* rclsid, Guid* riid, void** ppv);
     #endif
 
         public static IDiaDataSource CreateDataSource()
         {
         #if UNITY_EDITOR_WIN
-            object ppv;
-            DllGetClassObject(typeof(DiaSourceClass).GUID, typeof(IClassFactory).GUID, out ppv);
-            var factory = (IClassFactory)ppv;
-            factory.CreateInstance(null, typeof(IDiaDataSource).GUID, out ppv);
-            return (IDiaDataSource)ppv;
+            IntPtr ppv;
+            var clsid = typeof(DiaSourceClass).GUID;
+            var iid = typeof(IClassFactory).GUID;
+            DllGetClassObject(&clsid, &iid, (void**)&ppv);
+            var factory = (IClassFactory)Marshal.GetObjectForIUnknown(ppv);
+            iid = typeof(IDiaDataSource).GUID;
+            factory.CreateInstance(null, &iid, (void**)&ppv);
+            return (IDiaDataSource)Marshal.GetObjectForIUnknown(ppv);
         #else
             throw new NotSupportedException();
         #endif

@@ -6,9 +6,9 @@ namespace NewBlood
     [ComImport]
     [Guid("00000001-0000-0000-C000-000000000046")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IClassFactory
+    internal unsafe interface IClassFactory
     {
-        void CreateInstance([MarshalAs(UnmanagedType.IUnknown)] object outer, [In] Guid interfaceId, [MarshalAs(UnmanagedType.IUnknown)] out object instance);
-        void LockServer(bool @lock);
+        void CreateInstance(void* outer, Guid* interfaceId, void** instance);
+        void LockServer(byte @lock);
     }
 }
