@@ -64,7 +64,8 @@ namespace NewBlood
             var globalScope = session.globalScope;
 
             var methods    = new List<MethodDefinition>();
-            var attributes = new Dictionary<MethodDefinition, CustomAttribute>();
+            var properties = new List<PropertyDefinition>();
+            var attributes = new Dictionary<MemberReference, CustomAttribute>();
 
             try
             {
@@ -90,14 +91,16 @@ namespace NewBlood
                             foreach (TypeDefinition type in assembly.MainModule.Types)
                             {
                                 GetAnnotatedMethods(type, methods, attributes);
+                                GetAnnotatedProperties(type, properties, attributes);
 
                                 foreach (TypeDefinition nested in type.NestedTypes)
                                 {
                                     GetAnnotatedMethods(nested, methods, attributes);
+                                    GetAnnotatedProperties(nested, properties, attributes);
                                 }
                             }
 
-                            if (methods.Count == 0)
+                            if (methods.Count == 0 && properties.Count == 0)
                                 continue;
 
                             for (int i = 0; i < methods.Count; i++)
@@ -139,6 +142,36 @@ namespace NewBlood
                                 ProcessMethodImport(method, il, symbol, callConv);
                             }
 
+                            for (int i = 0; i < properties.Count; i++)
+                            {
+                                var property   = properties[i];
+                                var attribute  = attributes[property];
+                                var symbolName = attribute.ConstructorArguments[0].Value.ToString();
+                                property.CustomAttributes.Remove(attribute);
+                                property.GetMethod.Body = new MethodBody(property.GetMethod);
+                                var il = property.GetMethod.Body.GetILProcessor();
+
+                                IDiaEnumSymbols enumerator;
+                                globalScope.findChildren(SymTagEnum.SymTagPublicSymbol, symbolName, 0, out enumerator);
+
+                                if (enumerator.count <= 0)
+                                {
+                                    il.Emit(OpCodes.Ldstr, $"Unable to find an entry point named '{symbolName}'.");
+                                    il.Emit(OpCodes.Newobj, assembly.MainModule.ImportReference(typeof(EntryPointNotFoundException).GetConstructor(new[] { typeof(string) })));
+                                    il.Emit(OpCodes.Throw);
+                                    continue;
+                                }
+
+                                var symbol  = enumerator.Item(0);
+                                var address = symbol.relativeVirtualAddress;
+
+                                il.Emit(OpCodes.Call, property.Module.ImportReference(typeof(UnityModuleHelpers).GetMethod("GetBaseAddress")));
+                                il.Emit(OpCodes.Ldc_I4, (int)symbol.relativeVirtualAddress);
+                                il.Emit(OpCodes.Conv_I);
+                                il.Emit(OpCodes.Add);
+                                il.Emit(OpCodes.Ret);
+                            }
+
                             assembly.Write();
                             modified = true;
                         }
@@ -156,7 +189,7 @@ namespace NewBlood
             }
         }
 
-        private static void GetAnnotatedMethods(TypeDefinition type, List<MethodDefinition> methods, Dictionary<MethodDefinition, CustomAttribute> attributes)
+        private static void GetAnnotatedMethods(TypeDefinition type, List<MethodDefinition> methods, Dictionary<MemberReference, CustomAttribute> attributes)
         {
             foreach (MethodDefinition method in type.Methods)
             {
@@ -176,6 +209,49 @@ namespace NewBlood
 
                     methods.Add(method);
                     attributes.Add(method, attribute);
+                    break;
+                }
+            }
+        }
+
+        private static void GetAnnotatedProperties(TypeDefinition type, List<PropertyDefinition> properties, Dictionary<MemberReference, CustomAttribute> attributes)
+        {
+            foreach (PropertyDefinition property in type.Properties)
+            {
+                foreach (CustomAttribute attribute in property.CustomAttributes)
+                {
+                    if (attribute.AttributeType.FullName != typeof(SymbolImportAttribute).FullName)
+                        continue;
+
+                    if (property.SetMethod != null)
+                    {
+                        Debug.LogErrorFormat("[SymbolImport] Property cannot have setter: {0}", property.FullName);
+                        continue;
+                    }
+
+                    if (property.GetMethod == null)
+                    {
+                        Debug.LogErrorFormat("[SymbolImport] Property must have getter: {0}", property.FullName);
+                        continue;
+                    }
+
+                    if (!property.GetMethod.IsStatic)
+                    {
+                        Debug.LogErrorFormat("[SymbolImport] Property must be static: {0}", property.FullName);
+                        continue;
+                    }
+
+                    if (!property.GetMethod.ReturnType.IsPointer &&
+                        !property.GetMethod.ReturnType.IsFunctionPointer &&
+                        property.GetMethod.ReturnType != property.Module.TypeSystem.IntPtr &&
+                        property.GetMethod.ReturnType != property.Module.TypeSystem.UIntPtr)
+                    {
+                        Debug.LogErrorFormat("[SymbolImport] Property must be of pointer type: {0}", property.FullName);
+                        continue;
+                    }
+
+                    properties.Add(property);
+                    attributes.Add(property, attribute);
                     break;
                 }
             }

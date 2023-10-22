@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace NewBlood
 {
     /// <summary>Indicates that the attributed method is exposed by the engine's debugging symbols.</summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false)]
     public sealed class SymbolImportAttribute : Attribute
     {
         /// <summary>The name of the symbol to import.</summary>
