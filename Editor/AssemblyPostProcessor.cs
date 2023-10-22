@@ -86,6 +86,7 @@ namespace NewBlood
                         using (var assembly = AssemblyDefinition.ReadAssembly(assemblyPath, parameters))
                         {
                             methods.Clear();
+                            properties.Clear();
                             attributes.Clear();
                     
                             foreach (TypeDefinition type in assembly.MainModule.Types)
