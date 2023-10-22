@@ -78,9 +78,10 @@ namespace NewBlood
 
                         var parameters = new ReaderParameters
                         {
-                            ReadWrite        = true,
+                            ReadWrite = true,
                             AssemblyResolver = resolver,
-                            ReadSymbols      = false
+                            ReadSymbols = true,
+                            ThrowIfSymbolsAreNotMatching = false,
                         };
 
                         using (var assembly = AssemblyDefinition.ReadAssembly(assemblyPath, parameters))
@@ -173,7 +174,7 @@ namespace NewBlood
                                 il.Emit(OpCodes.Ret);
                             }
 
-                            assembly.Write();
+                            assembly.Write(new WriterParameters { WriteSymbols = true });
                             modified = true;
                         }
                     }
